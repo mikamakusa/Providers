@@ -156,20 +156,30 @@ class Servers(Aruba):
                 connect().poweroff_server(server_id=serverid)
                 time.sleep(60)
                 connect().delete_vm(server_id=serverid)
-
             elif action.get('Remove Disk'):
                 vm = connect().get_vm(pattern=servername)[0]
                 vm.poweroff()
                 vm.remove_virtual_disk(virtual_disk_id=disknumber)
                 time.sleep(60)
                 connect().poweron_server(server_id=serverid)
-
             elif action.get('Add disk'):
                 vm = connect().get_vm(pattern=servername)[0]
                 vm.poweroff()
-                vm.vm.add_virtual_disk(size=int(disk))
+                vm.add_virtual_disk(size=int(disk))
                 time.sleep(60)
                 connect().poweron_server(server_id=serverid)
+            elif action.get('Add Ram'):
+                vm = connect().get_vm(pattern=servername)[0]
+                vm.poweroff()
+                vm.set_cpu_qty(ram)
+                time.sleep(60)
+                vm.poweron_server()
+            elif action.get('Add Cpu'):
+                vm = connect().get_vm(pattern=servername)[0]
+                vm.poweroff()
+                vm.set_cpu_qty(cpu)
+                time.sleep(60)
+                vm.poweron_server()               
         else:
             if action.get('Rebuild'):
                 for vm in (connect()).get_vm(pattern=serverid):
