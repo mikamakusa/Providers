@@ -31,7 +31,7 @@ class Images(Google):
                 header={"Authorization": "Bearer %s"} % Google.token)
             data = request.json()
             for i in data['items']:
-                if image in i['selfLink']:
+                if osname in i['selfLink']:
                     imageid = i['selfLink'][-1]
                     return imageid
 
@@ -64,14 +64,14 @@ class Region(Google):
                     return 'e'
                 elif '6' in regionnum:
                     return 'f'
-                _region =  _reg_.lower()+'*'+regionnum
+                _region = _reg_.lower()+'*'+regionnum
                 return _region
         request = requests.get(Url.ROOT_URL_GO + "/%s/regions" % Google.project,
                                header={"Authorization": "Bearer %s" % Google.token})
         data = request.json()
         for i in data['items']:
-            if _region in data['items']:
-                regionid = data['selfLink']
+            if _region in i['items']:
+                regionid = i['selfLink']
                 return regionid
 
 
@@ -90,8 +90,8 @@ class Size(Google):
             sizeid = 'n1-standard-1'
 
         request = requests.get(Url.ROOT_URL_GO + "/%s/zones/%s/machineType"
-                     % (Google.project, Region.regionid(Region.regionname, Region.regionnum)),
-                     header={"Authorization": "Bearer %s" % Google.token})
+                               % (Google.project, Region.regionid(Region.regionname, Region.regionnum)),
+                               header={"Authorization": "Bearer %s" % Google.token})
         data = request.json()
         for i in data['items']:
             if sizeid in data['items']:
@@ -128,8 +128,7 @@ class Servers(Google):
             _body = '{"name": "%s","machineType": "%s","networkInterfaces": [{"accessConfigs": ' \
                     '[{"type": "ONE_TO_ONE_NAT","name": "External NAT"}],"network": "global/networks/default"}],' \
                     '"disks": [{"autoDelete": "true","boot": "true","type": "PERSISTENT","initializeParams": ' \
-                    '{"sourceImage": "%s"}}]}' % (
-                    servername, _sizeid_, _imageid_)
+                    '{"sourceImage": "%s"}}]}' % (servername, _sizeid_, _imageid_)
             requests.post(
                 Url.ROOT_URL_GO + "/%s/zones/%s/instances"
                 % (Google.project, _regionid_),

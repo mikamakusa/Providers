@@ -153,20 +153,20 @@ class Servers(Cloudwatt):
             flavorid = Sizes.getsizeid(size)
             if imageid not in "Win":
                 _body = '{"keypair":{"name":"cle"}}'
-                request = requests.post("https://network.fr1.cloudwatt.com/v2/%s/os-keypairs",
+                request = requests.post(Url.ROOT_URL_CW_NET + "%s/os-keypairs",
                                         headers={"X-Auth-Token": "%s" % token}, data=_body)
                 data = request.json()
                 key = data['keypair']
                 _body = '{"security_group_rule":{"direction":"ingress","port_range_min":"22",' \
                         '"ethertype":"IPv4","port_range_max":"22","protocol":"tcp","security_group_id":"%s"}}' \
                         % secgroup
-                requests.post("https://network.fr1.cloudwatt.com/v2/security-group-rules",
+                requests.post(Url.ROOT_URL_CW_NET + "security-group-rules",
                               headers={"X-Auth-Token": "%s" % token}, data=_body)
                 _body = '{"server":{"name":"%s","key_name":"%s","imageRef":"%s","flavorRef":"%s",' \
                         '"max_count":%s,"min_count":1,"networks":[{"uuid":"%s"}],"metadata": {"admin_pass": "%s"},' \
                         '"security_groups":[{"name":"default"},{"name":"%s"}]}}' \
                         % (servername, key, imageid, flavorid, number, netid, servpass, secgroup)
-                request = requests.post("https://compute.fr1.cloudwatt.com/v2/%s/servers" % Cloudwatt.tenantid,
+                request = requests.post(Url.ROOT_URL_CW + "%s/servers" % Cloudwatt.tenantid,
                                         headers={"X-Auth-Token": "%s" % token}, data=_body)
                 data = request.json()
                 serverid = data['server']['id']
@@ -174,39 +174,39 @@ class Servers(Cloudwatt):
                 _body = '{"security_group_rule":{"direction":"ingress","port_range_min":"3389",' \
                         '"ethertype":"IPv4","port_range_max":"3389","protocol":"tcp","security_group_id":"%s"}}' % (
                             secgroup)
-                request = requests.post("https://compute.fr1.cloudwatt.com/v2/%s/servers" % Cloudwatt.tenantid,
+                request = requests.post(Url.ROOT_URL_CW + "%s/servers" % Cloudwatt.tenantid,
                                         headers={"X-Auth-Token": "%s" % token}, data=_body)
                 data = request.json()
                 serverid = data['server']['id']
 
             # Public Network Interface Id
-            request = requests.get("https://network.fr1.cloudwatt.com/v2/networks",
+            request = requests.get(Url.ROOT_URL_CW_NET + "networks",
                                    headers={"X-Auth-Token": "%s" % token})
             data = request.json()
             for i in data['networks']:
                 if "public" in i['name']:
                     netid = i['id']
 
-            # Floatting IP
+            # Floating IP
             _body = '{"floatingip":{"floating_network_id":"%s"}}' % netid
-            request = requests.post("https://network.fr1.cloudwatt.com/v2/floatingips",
+            request = requests.post(Url.ROOT_URL_CW_NET + "floatingips",
                                     headers={"X-Auth-Token": "%s" % token}, data=_body)
             data = request.json()
-            IP = data['floatinip']['floating_ip_address']
+            IP = data['floatingip']['floating_ip_address']
 
             # Commit IP to Server
             _body = '{"addFloatingIp":{"address":"%s"}}' % IP
-            requests.post("https://compute.fr1.cloudwatt.com/v2/%s/servers/%s/action" % (Cloudwatt.tenantid, serverid),
+            requests.post(Url.ROOT_URL_CW + "%s/servers/%s/action" % (Cloudwatt.tenantid, serverid),
                           headers={"X-Auth-Token": "%s" % token}, data=_body)
         elif action.get("Remove"):
-            requests.delete("https://compute.fr1.cloudwatt.com/v2/%s/servers/%s" % (Cloudwatt.tenantid, serverid),
+            requests.delete(Url.ROOT_URL_CW + "%s/servers/%s" % (Cloudwatt.tenantid, serverid),
                             headers={"X-Auth-Token": "%s" % token})
         elif action.get("Reboot"):
-            requests.post("https://compute.fr1.cloudwatt.com/v2/%s/servers/%s/reboot" % (Cloudwatt.tenantid, serverid),
+            requests.post(Url.ROOT_URL_CW + "%s/servers/%s/reboot" % (Cloudwatt.tenantid, serverid),
                           headers={"X-Auth-Token": "%s" % token})
         elif action.get("Rebuild"):
             request = requests.get(
-                "https://compute.fr1.cloudwatt.com/v2/%s/servers/%s/detail" % (Cloudwatt.tenantid, serverid),
+                Url.ROOT_URL_CW + "%s/servers/%s/detail" % (Cloudwatt.tenantid, serverid),
                 headers={"X-Auth-Token": "%s" % token})
             data = request.json()
             for i in data['servers']:
@@ -216,5 +216,5 @@ class Servers(Cloudwatt):
 
             _body = '{"rebuild": {"imageRef": "%s","name": "%s","adminPass": "%s","accessIPv4": "%s"}}' % (
                 imageid, servername, servpass, IP)
-            requests.post("https://compute.fr1.cloudwatt.com/v2/%s/servers/%s/rebuild" % (Cloudwatt.tenantid, serverid),
+            requests.post(Url.ROOT_URL_CW + "%s/servers/%s/rebuild" % (Cloudwatt.tenantid, serverid),
                           headers={"X-Auth-Token": "%s" % token}, data=_body)
