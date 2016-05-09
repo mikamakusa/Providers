@@ -1,6 +1,8 @@
 __author__ = 'Michael'
 from ArubaCloud.PyArubaAPI import CloudInterface
 from ArubaCloud.objects import SmartVmCreator, ProVmCreator
+from LoadBalancers import LoadBalancer, LoadBalancerCreator
+from Storage import Storage, StorageCreator
 import time
 
 
@@ -78,7 +80,7 @@ class Servers(Aruba):
     image = None
     disknumber = None
 
-    def __init__(self, size, pack, image, serverid, action, servername, servpass, number,  cpu, ram, disk,
+    def __init__(self, size, pack, image, serverid, action, servername, servpass, number, cpu, ram, disk,
                  disknumber, username, password, region):
         super(Servers, self).__init__(username, password, region)
         self.servername = servername
@@ -179,7 +181,7 @@ class Servers(Aruba):
                 vm.poweroff()
                 vm.set_cpu_qty(cpu)
                 time.sleep(60)
-                vm.poweron_server()               
+                vm.poweron_server()
         else:
             if action.get('Rebuild'):
                 for vm in (connect()).get_vm(pattern=serverid):
@@ -219,3 +221,83 @@ class Network(Aruba):
     def netremove(netname):
         vlan = connect().get_vlan(vlan_name=netname)
         connect().remove_vlan(vlan_resource_id=vlan)
+
+
+class Balancing(Aruba):
+    name = None
+    serverid = None
+    algorithm = None
+    protocol = None
+    balancerport = None
+    serverport = None
+    contact = None
+    action = None
+    lbid = None
+
+    def __init__(self, name, serverid, algorithm, protocol, balancerport, serverport,
+                 contact, action, lbid, dc, username, password):
+        super(Balancing, self).__init__(dc, username, password)
+        self.name = name
+        self.serverid = serverid
+        self.algorithm = algorithm
+        self.protocol = protocol
+        self.balancerport = balancerport
+        self.serverport = serverport
+        self.contact = contact
+        self.action = action
+        self.lbid = lbid
+
+    @staticmethod
+    def lb_action(name=None, serverid=None, algorithm=None, protocol=None,
+                  balancerport=None, serverport=None, contact=None, lbid=None, **action):
+        if action.get('Create'):
+            LoadBalancerCreator(name=name,
+                                serverid=serverid,
+                                algorithm=algorithm,
+                                protocol=protocol,
+                                lbport=balancerport,
+                                serverport=serverport,
+                                contact=contact,
+                                auth_obj=connect().auth)
+        elif action.get('Enable'):
+            LoadBalancer.enable(lbid)
+        elif action.get('Disable'):
+            LoadBalancer.disable(lbid)
+        elif action.get('Delete'):
+            LoadBalancer.delete(lbid)
+
+
+class NetStorage(Aruba):
+    name = None
+    protocol = None
+    space = None
+    iqn = None
+    action = None
+    storage_id = None
+
+    def __init__(self, storage_id, name, protocol, space, iqn, action, dc, username, password):
+        super(NetStorage, self).__init__(dc, username, password)
+        self.name = name
+        self.protocol = protocol
+        self.space = space
+        self.iqn = iqn
+        self.action = action
+        self.storage_id = storage_id
+
+    @staticmethod
+    def get_protocol(protocol):
+        proto_dict = {'CIFS', 'ISCSI', 'NFS'}
+        for _proto_ in proto_dict:
+            if protocol in _proto_:
+                return protocol
+
+    @staticmethod
+    def storage_action(name=None, protocol=None, space=None, iqn=None, storage_id=None, **action):
+        if action.get('Create'):
+            StorageCreator(name=name,
+                           protocol=NetStorage.get_protocol(protocol),
+                           space=int(space),
+                           iqn=iqn,
+                           auth_obj=connect().auth)
+        elif action.get('Remove'):
+            Storage.remove(storage_id)

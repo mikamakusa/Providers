@@ -28,7 +28,7 @@ class Images(Google):
             image = _os_.lower().replace('_', ' ').split()[0]
             request = requests.get(
                 Url.ROOT_URL_GO + "/%s/%s-cloud/global/images" % (Google.project, image),
-                header={"Authorization": "Bearer %s"} % Google.token)
+                header={"Authorization": "Bearer %s" % Google.token})
             data = request.json()
             for i in data['items']:
                 if osname in i['selfLink']:
@@ -94,8 +94,8 @@ class Size(Google):
                                header={"Authorization": "Bearer %s" % Google.token})
         data = request.json()
         for i in data['items']:
-            if sizeid in data['items']:
-                _sizeid = data['selfLink']
+            if sizeid in i['items']:
+                _sizeid = i['selfLink']
                 return _sizeid
 
 
@@ -143,3 +143,51 @@ class Servers(Google):
             requests.post("https://www.googleapis.com/compute/v1/projects/%s/zones/%s/instances/%s/reset"
                           % (Google.project, _regionid_, serverid),
                           header={"Authorization": "Bearer %s" % Google.token})
+
+
+class Network(Google):
+    netname = None
+    regionname = None
+    regionnum = None
+    iprange = None
+    attach = None
+    boundto = None
+
+    def __init__(self, project, netname, regionname, regionnum, iprange, attach, boundto, token):
+        super(Network, self).__init__(token, project)
+        self.netname = netname
+        self.regionname = regionname
+        self.regionnum = regionnum
+        self.iprange = iprange
+        self.attach = attach
+        self.boundto = boundto
+
+    def network(self, netname, iprange=None):
+        _body = '{ "autoCreateSubnetworks": false, "name": "%s" }' % netname
+        requests.post(Url.ROOT_URL_GO + "/%s/global/networks" % Google.project, data=_body)
+        if iprange is not None:
+            _body = '{"name": "%s","ipCidrRange": "%s","network": %s/%s/global/networks/%s"}' \
+                    % (self.netname, self.iprange, Url.ROOT_URL_GO, Google.project, self.netname)
+            requests.post(Url.ROOT_URL_GO + "/%s/regions/%s/subnetworks" % (Google.project,
+                                                                            Region.regionid(self.regionname,
+                                                                                            self.regionnum)),
+                          data=_body)
+
+    def external(self, netname, attach=None, boundto=None):
+        _body = '{ "kind": "compute#address", "resourceType": "addresses", "name": "%s", "region": "%s" }' \
+                % (netname, Region.regionid(self.regionname, self.regionnum))
+        requests.post(Url.ROOT_URL_GO + "/%s/regions/%s/addresses" % (Google.project,
+                                                                      Region.regionid(self.regionname,
+                                                                                      self.regionnum)), data=_body)
+        if attach is not None:
+            _body = '{ "instanceName": "%s", "zone": "%s", "networkInterface": "nic0", ' \
+                    '"accessConfigName": "External NAT", "kind": "compute#accessConfig", ' \
+                    '"resourceType": "instances", ' \
+                    '"address": "[IP address of newly created Static IP Address]" }' \
+                    % (boundto, Region.regionid(self.regionname, self.regionnum))
+            requests.post(Url.ROOT_URL_GO + "/%s/regions/%s/instances/%s"
+                          % (Google.project, Region.regionid(self.regionname, self.regionnum), boundto), data=_body)
+
+
+class Firewall(Google):
+    ""
