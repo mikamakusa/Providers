@@ -173,13 +173,13 @@ class Servers(Aruba):
             elif action.get('Add Ram'):
                 vm = connect().get_vm(pattern=servername)[0]
                 vm.poweroff()
-                vm.set_cpu_qty(ram)
+                vm.set_ram_qty(int(ram))
                 time.sleep(60)
                 vm.poweron_server()
             elif action.get('Add Cpu'):
                 vm = connect().get_vm(pattern=servername)[0]
                 vm.poweroff()
-                vm.set_cpu_qty(cpu)
+                vm.set_cpu_qty(int(cpu))
                 time.sleep(60)
                 vm.poweron_server()
         else:
