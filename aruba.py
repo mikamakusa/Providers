@@ -1,8 +1,8 @@
 __author__ = 'Michael'
-from ArubaCloud.PyArubaAPI import CloudInterface
+from PyArubaAPI import CloudInterface
 from ArubaCloud.objects import SmartVmCreator, ProVmCreator
-from LoadBalancers import LoadBalancer, LoadBalancerCreator
-from Storage import Storage, StorageCreator
+from LoadBalancers import LoadBalancerCreator
+from Storage import StorageCreator
 import time
 
 
@@ -260,11 +260,11 @@ class Balancing(Aruba):
                                 contact=contact,
                                 auth_obj=connect().auth)
         elif action.get('Enable'):
-            LoadBalancer.enable(lbid)
+            connect().get_loadbalancer(lbid=lbid)
         elif action.get('Disable'):
-            LoadBalancer.disable(lbid)
+            connect().disable_loadbalancer(lbid=lbid)
         elif action.get('Delete'):
-            LoadBalancer.delete(lbid)
+            connect().delete_loadbalancer(lbid=lbid)
 
 
 class NetStorage(Aruba):
@@ -300,4 +300,7 @@ class NetStorage(Aruba):
                            iqn=iqn,
                            auth_obj=connect().auth)
         elif action.get('Remove'):
-            Storage.remove(storage_id)
+            if iqn is None:
+                connect().remove_shared_storage(storage_id)
+            else:
+                connect().remove_iqn_storage(storage_id)

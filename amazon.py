@@ -24,8 +24,9 @@ class Servers(Amazon):
     action = None
     groupname = None
     instype = None
+    price = None
 
-    def __init__(self, instype, keyname, image, number, serverid, action, groupname, accesskey, secretkey):
+    def __init__(self, price, instype, keyname, image, number, serverid, action, groupname, accesskey, secretkey):
         super(Servers, self).__init__(accesskey, secretkey)
         self.keyname = keyname
         self.image = image
@@ -34,45 +35,47 @@ class Servers(Amazon):
         self.action = action
         self.groupname = groupname
         self.instype = instype
+        self.price = price
 
     @staticmethod
-    def s_action(keyname=None, image=None, number=None, serverid=None, groupname=None, instype=None, **action):
+    def s_action(keyname=None, image=None, number=None, serverid=None,
+                 groupname=None, price=None, instype=None, **action):
         group = connect(Amazon.accesskey, Amazon.secretkey).create_security_group(name=groupname, description="")
         group.authorize('tcp', 22, 22, '0.0.0.0/0')
         group.authorize('tcp', 3389, 3389, '0.0.0.0/0')
         connect(Amazon.accesskey, Amazon.secretkey).create_key_pair(key_name=keyname)
         if action.get('Insert'):
-            if 'spot' not in instype:
+            if None in instype:
                 if 'Windows' in connect(Amazon.accesskey, Amazon.secretkey).get_image(image_id=image).platform:
                     connect(Amazon.accesskey, Amazon.secretkey).run_instances(image_id=image,
                                                                               min_count=1,
                                                                               max_count=number,
-                                                                              instance_type='m1.small',
+                                                                              instance_type='t2.micro',
                                                                               security_groups=group,
                                                                               monitoring_enabled=True)
                 else:
                     connect(Amazon.accesskey, Amazon.secretkey).run_instances(image_id=image,
                                                                               min_count=1,
                                                                               max_count=number,
-                                                                              instance_type='m1.small',
+                                                                              instance_type='t2.micro',
                                                                               security_groups=group,
                                                                               key_name=keyname,
                                                                               monitoring_enabled=True)
-            else:
+            elif instype.get("Spot"):
                 if 'Windows' in connect(Amazon.accesskey, Amazon.secretkey).get_image(image_id=image).platform:
-                    connect(Amazon.accesskey, Amazon.secretkey).request_spot_instances(price="0.24",
+                    connect(Amazon.accesskey, Amazon.secretkey).request_spot_instances(price=str(price),
                                                                                        security_groups=group,
                                                                                        monitoring_enabled=True,
                                                                                        type='one-time',
                                                                                        image_id=image,
-                                                                                       instance_type='m1.micro')
+                                                                                       instance_type='m4.large')
                 else:
-                    connect(Amazon.accesskey, Amazon.secretkey).request_spot_instances(price="0.24",
+                    connect(Amazon.accesskey, Amazon.secretkey).request_spot_instances(price=str(price),
                                                                                        security_groups=group,
                                                                                        monitoring_enabled=True,
                                                                                        type='one-time',
                                                                                        image_id=image,
-                                                                                       instance_type='m1.micro',
+                                                                                       instance_type='m4.large',
                                                                                        key_name=keyname)
 
         elif action.get('Remove'):

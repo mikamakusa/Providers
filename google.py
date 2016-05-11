@@ -118,8 +118,8 @@ class Servers(Google):
         self.region = region
         self.regionnum = regionnum
 
-    @staticmethod
-    def s_action(servername=None, machinetype=None, image=None, serverid=None, region=None, regionnum=None, **action):
+    def s_action(self, servername=None, machinetype=None, image=None, serverid=None,
+                 region=None, regionnum=None, **action):
         _imageid_ = Images.getimageid(image)
         _regionid_ = Region.regionid(region, regionnum)
         _sizeid_ = Size.getsizeid(machinetype)
@@ -190,4 +190,62 @@ class Network(Google):
 
 
 class Firewall(Google):
-    ""
+    rulename = None
+    protocol = None
+    port = None
+    source = None
+    action = None
+
+    def __init__(self, action, rulename, protocol, port, source, token, project):
+        super(Firewall, self).__init__(token, project)
+        self.rulename = rulename
+        self.protocol = protocol
+        self.port = port
+        self.source = source
+        self.action = action
+
+    @staticmethod
+    def firewall_action(rulename, protocol, port, source, **action):
+        if action.get('Insert'):
+            _body = '{ "kind": "compute#firewall", "name": "%s", "allowed": [ { "IPProtocol": "%s", ' \
+                    '"ports": [ "%s" ] } ], "network": "projects/%s/global/networks/default", ' \
+                    '"sourceRanges": [ "%s" ]}' % (rulename, protocol, port, Google.project, source)
+
+            requests.post(Url.ROOT_URL_RS + "%s/global/firewalls" % Google.project, data=_body)
+
+        if action.get('Remove'):
+            requests.delete(Url.ROOT_URL_GO + "%s/global/firewalls/%s" % (Google.project, rulename))
+
+
+class Container(Google):
+    clustername = None
+    regionname = None
+    regionnum = None
+    nodecount = None
+    password = None
+    clusterid = None
+    action = None
+
+    def __init__(self, clustername, regionname, regionnum, nodecount, password, clusterid, action, token, project):
+        super(Container, self).__init__(token, project)
+        self.clustername = clustername
+        self.regionname = regionname
+        self.regionnum = regionnum
+        self.nodecount = nodecount
+        self.password = password
+        self.action = action
+        self.clusterid = clusterid
+
+    def containers_action(self, clustername, regionname, regionnum, nodecount, password, clusterid=None, **action):
+        if action.get('Insert'):
+            _body = '{ "cluster": { "name": "%s", "zone": "%s", "initialNodeCount": %i, ' \
+                    '"network": "default", "loggingService": "logging.googleapis.com", ' \
+                    '"monitoringService": "none", "nodeConfig": { "machineType": "n1-standard-1" }, ' \
+                    '"subnetwork": "default-329f99c0b83efc42", ' \
+                    '"masterAuth": { "user": "admin", "password": "%s" } } }' \
+                    % (clustername, Region.regionid(regionname, regionnum), nodecount, password)
+            requests.post(Url.ROOT_URL_RS + "%s/zones/%s/clusters"
+                          % (Google.project, Region.regionid(regionname, regionnum)), data=_body)
+        if action.get('Remove'):
+            requests.delete(Url.ROOT_URL_GO + "%s/zones/%s/clusters/%s"
+                            % (Google.project, Region.regionid(regionname, regionnum), clusterid))
